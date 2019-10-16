@@ -119,6 +119,12 @@ def replaceTags(text_frame, data):
         for i in range(startRunIndex+1, endRunIndex):
           runs[i].text = ''
 
+def isTextBased(placeholder):
+  """
+  Returns true is the placeholder is "text-based"
+  """
+  return placeholder.placeholder_format.type._member_name in ('BODY', 'CENTER_TITLE', 'SUBTITLE', 'TITLE', 'VERTICAL_BODY', 'VERTICAL_TITLE')
+
 def formateTextPlaceholder(placeholder, data):
   """
   Executes all the steps to formate a "text-based" placeholder
