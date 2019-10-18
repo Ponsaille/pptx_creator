@@ -1,6 +1,8 @@
 import copy
 import re
 
+from ..style import getAllStylingAreasPosInParagraphs, removeStylingAreas, parser, basicFormating, getStylingAreasPosInTextFrame
+
 def copyBaseTextFrame(placeholder):
   """
   Copy the texts of the original placeholder insite the SlidePlaceholder
@@ -131,4 +133,16 @@ def formateTextPlaceholder(placeholder, data):
   """
   copyBaseTextFrame(placeholder)
 
+  applyStyle(placeholder, data)
+
   replaceTags(placeholder.text_frame, data)
+
+def applyStyle(placeholder, data):
+  # Parse tex_frame
+  texts = [paragraph.text for paragraph in placeholder.text_frame.paragraphs]
+  stylingAreas = list(getStylingAreasPosInTextFrame(texts))
+  style = parser(stylingAreas, data)
+  # Apply style
+  basicFormating(placeholder, style)
+  # Remove styling areas
+  removeStylingAreas(placeholder.text_frame.paragraphs, getAllStylingAreasPosInParagraphs(texts, stylingAreas))

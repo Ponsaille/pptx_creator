@@ -26,8 +26,8 @@ def getStylingAreaPos(texts, startPos, endPos):
   
   return (startParagraphIndex, endParagraphIndex)
 
-def getAllStylingAreas(texts):
-  return [getStylingAreaPos(texts, area.start(), area.end()) for area in getStylingAreasPosInTextFrame(texts)]
+def getAllStylingAreasPosInParagraphs(texts, stylingAreas):
+  return [getStylingAreaPos(texts, area.start(), area.end()) for area in stylingAreas]
 
 
 def removeStylingAreas(paragraphs, stylingAreas):
@@ -52,13 +52,10 @@ def replaceTags(text, data):
   
   return text
 
-def parser(paragraphs, data):
+def parser(stylingAreas, data):
   """
-  Parse paragraphs to return all the style in a unique 
+  Parse styling areas to return all the style in a unique dictionnary
   """
-  texts = [paragraph.text for paragraph in paragraphs]
-  stylingAreas = getStylingAreasPosInTextFrame(texts)
-
   stylingAreas = [stylingArea.group(1).split(';') for stylingArea in stylingAreas]
   lines = [line.split(':') for sublist in stylingAreas for line in sublist]
   style = {}
