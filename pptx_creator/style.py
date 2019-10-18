@@ -62,7 +62,7 @@ def parser(stylingAreas, data):
 
   for line in lines:
     if(len(line) == 2):
-        style[line[0].strip()] = replaceTags(line[1], data)
+        style[line[0].strip()] = replaceTags(line[1], data).strip()
   return style
 
 def fill(placeholder, apply):

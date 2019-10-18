@@ -2,6 +2,7 @@ from pptx.parts.image import Image, ImagePart
 from pptx.opc.constants import CONTENT_TYPE as CT, RELATIONSHIP_TYPE as RT
 from pptx.oxml.shapes.picture import CT_Picture
 from pptx.shapes.placeholder import PlaceholderPicture
+from ..style import getAllStylingAreasPosInParagraphs, removeStylingAreas, parser, basicFormating, getStylingAreasPosInTextFrame
 import re
 import base64
 
@@ -50,7 +51,7 @@ def imagePartAndrIdFromBlob(placeholder, blob):
 
   return imagePart, rId
 
-def insertBlobImage(placeholder, blob):
+def insertBlobImage(placeholder, blob, objectFit):
   """
   Inserts a blob image into a placeholder
 
@@ -66,8 +67,10 @@ def insertBlobImage(placeholder, blob):
 
   pic = CT_Picture.new_ph_pic(shapeId, name, desc, rId)
 
-  # Equivalent to cover in css
-  pic.crop_to_fit(imageSize, (placeholder.width, placeholder.height))
+  if(objectFit == "contain"):
+    pic.blipFill.crop(_contain_cropping(imageSize, (placeholder.width, placeholder.height)))
+  else:
+    pic.crop_to_fit(imageSize, (placeholder.width, placeholder.height))
 
   placeholder._replace_placeholder_with(pic)
 
@@ -83,8 +86,55 @@ def formateImagePlaceholder(placeholder, data):
   
   Returns the PlaceholderPicture object of the image
   """
-  tag = re.search(r"\$\{([A-Za-z0-9._\-]+)\}", placeholder._base_placeholder.text_frame.text).group(1)
+  # Parse tex_frame
+  texts = [paragraph.text for paragraph in placeholder._base_placeholder.text_frame.paragraphs]
+  stylingAreas = list(getStylingAreasPosInTextFrame(texts))
+  style = parser(stylingAreas, data)
+  
+  text = ''.join(texts)
+  # Remove styling areas
+  for stylingArea in stylingAreas:
+    text = text[:stylingArea.start()] + text[stylingArea.end():]
+
+  tag = re.search(r"\$\{([A-Za-z0-9._\-]+)\}", text)
+
+  if tag:
+    tag = tag.group(1)
 
   if(tag and data.get(tag)):
     blob = base64.decodestring(bytes(data.get(tag), 'utf-8'))
-    return insertBlobImage(placeholder, blob)
+    placeholderPicture = insertBlobImage(placeholder, blob, style.get('object-fit'))
+
+    # Apply style at the end because placeholder is replaced
+    basicFormating(placeholderPicture, style)
+    return placeholderPicture
+
+  basicFormating(placeholder, style)
+
+  return placeholder
+
+  
+
+def _contain_cropping(image_size, view_size):
+    """
+    Return a (left, top, right, bottom) 4-tuple containing the cropping
+    values required to display an image of *image_size* in *view_size*
+    when stretched proportionately. Each value is a percentage expressed
+    as a fraction of 1.0, e.g. 0.425 represents 42.5%. *image_size* and
+    *view_size* are each (width, height) pairs.
+    """
+
+    def aspect_ratio(width, height):
+        return width / height
+
+    ar_view = aspect_ratio(*view_size)
+    ar_image = aspect_ratio(*image_size)
+
+    if ar_view > ar_image:  
+        crop = (1.0 - (ar_view / ar_image)) / 2.0
+        return (crop, 0.0, crop, 0.0)
+    if ar_view < ar_image:  
+        crop = (1.0 - (ar_image / ar_view)) / 2.0
+        return (0.0, crop, 0.0, crop)
+    return (0.0, 0.0, 0.0, 0.0)
+
