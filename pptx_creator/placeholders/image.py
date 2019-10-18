@@ -86,5 +86,5 @@ def formateImagePlaceholder(placeholder, data):
   tag = re.search(r"\$\{([A-Za-z0-9._\-]+)\}", placeholder._base_placeholder.text_frame.text).group(1)
 
   if(tag and data.get(tag)):
-    blob = base64.decodestring(data.get(tag))
+    blob = base64.decodestring(bytes(data.get(tag), 'utf-8'))
     return insertBlobImage(placeholder, blob)
